@@ -6,6 +6,54 @@ const static int spiClk = 10000;
 
 const uint8_t num_of_matrices = 4;
 
+const uint8_t smiley_face[8] = {
+  0b00111100,
+  0b01000010,
+  0b01000010,
+  0b00011000,
+  0b00000000,
+  0b01011010,
+  0b00111100,
+  0b00000000
+};
+
+void drawSmileyFace() {
+  for (byte i = 0; i < 8; i++) {
+    digitalWrite(4, LOW);
+    for (byte j = 0; j < num_of_matrices; j++) {
+      spi->transfer(0x01 + i); // Address
+      spi->transfer(smiley_face[i]); // Data
+    }
+    digitalWrite(4, HIGH);
+  }
+}
+void drawLine(byte x1, byte y1, byte x2, byte y2) {
+  int dx = abs(x2 - x1);
+  int dy = abs(y2 - y1);
+  int sx = (x1 < x2) ? 1 : -1;
+  int sy = (y1 < y2) ? 1 : -1;
+  int err = dx - dy;
+
+  while (true) {
+    displayPixel(x1, y1);
+    if (x1 == x2 && y1 == y2) break;
+    int err2 = err * 2;
+    if (err2 > -dy) {
+      err -= dy;
+      x1 += sx;
+    }
+    if (err2 < dx) {
+      err += dx;
+      y1 += sy;
+    }
+  }
+}
+void drawRectangle(byte x, byte y, byte width, byte height) {
+  drawLine(x, y, x + width - 1, y);
+  drawLine(x + width - 1, y, x + width - 1, y + height - 1);
+  drawLine(x + width - 1, y + height - 1, x, y + height - 1);
+  drawLine(x, y + height - 1, x, y);
+}
 void displayPixel(byte x, byte y) {
   if (x > 31 || y > 7) {
     return;
