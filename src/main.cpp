@@ -7,14 +7,14 @@ const static int spiClk = 10000;
 const uint8_t num_of_matrices = 4;
 
 const uint8_t smiley_face[8] = {
-  0b00111100,
-  0b01000010,
-  0b01000010,
-  0b00011000,
-  0b00000000,
-  0b01011010,
-  0b00111100,
-  0b00000000
+  0b00000000, // 0x3C
+  0b01100110, // 0x42
+  0b01100110, // 0x42
+  0b00000000, // 0x42
+  0b00000000, // 0x18
+  0b10000001, // 0x00
+  0b01000010, // 0x5A
+  0b00111100, // 0x3C
 };
 
 void drawSmileyFace() {
@@ -22,11 +22,33 @@ void drawSmileyFace() {
     digitalWrite(4, LOW);
     for (byte j = 0; j < num_of_matrices; j++) {
       spi->transfer(0x01 + i); // Address
-      spi->transfer(smiley_face[i]); // Data
+      spi->transfer(smiley_face[7-i]); // Data
     }
     digitalWrite(4, HIGH);
   }
 }
+
+void displayPixel(byte x, byte y) {
+  if (x > 31 || y > 7) {
+    return;
+  }
+  byte index = x / 8;
+  byte address = 1 << (x % 8);
+  byte command = 0x01 + y;
+
+  digitalWrite(4, LOW);
+  for (byte i = 0; i < num_of_matrices; i++) {
+        if (i == 3 - index) {
+            spi->transfer(command);
+            spi->transfer(address);
+        } else {
+            spi->transfer(0x00);
+            spi->transfer(0x00);
+        }
+    }
+  digitalWrite(4, HIGH);
+}
+
 void drawLine(byte x1, byte y1, byte x2, byte y2) {
   int dx = abs(x2 - x1);
   int dy = abs(y2 - y1);
@@ -54,26 +76,8 @@ void drawRectangle(byte x, byte y, byte width, byte height) {
   drawLine(x + width - 1, y + height - 1, x, y + height - 1);
   drawLine(x, y + height - 1, x, y);
 }
-void displayPixel(byte x, byte y) {
-  if (x > 31 || y > 7) {
-    return;
-  }
-  byte index = x / 8;
-  byte address = 1 << (x % 8);
-  byte command = 0x01 + y;
 
-  digitalWrite(4, LOW);
-  for (byte i = 0; i < num_of_matrices; i++) {
-        if (i == 3 - index) {
-            spi->transfer(command);
-            spi->transfer(address);
-        } else {
-            spi->transfer(0x00);
-            spi->transfer(0x00);
-        }
-    }
-  digitalWrite(4, HIGH);
-}
+
 void clearDisplay() {
   for (byte i = 0; i < 8; i++) {
       digitalWrite(4, LOW);
@@ -128,10 +132,6 @@ void setup() {
 }
 
 void loop() {
-  for (int i = 0; i < 32; i++) {
-    displayPixel(i, 0);
-    delay(100);
-    clearDisplay();
-  }
+  drawSmileyFace();
 
 }
